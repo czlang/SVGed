@@ -169,6 +169,31 @@
             :on-change #(swap! data assoc-in [:svg id :params k] %)]]])
        item-data))]))
 
+(defn svg-props-edit [data]
+  (fn []
+    [:div
+     (map
+      (fn [[attr v]]
+        ^{:key attr}
+        [re-com/v-box :gap "10px"
+         :children
+         [[re-com/label :style {:width "90px"} :label (str attr)]
+          [:div
+           (map
+            (fn [[k v]]
+              ^{:key k}
+              [re-com/h-box :gap "10px"
+               :children
+               [[re-com/label :style {:width "50px"} :label (str k)]
+                [:span (str v)]
+                [re-com/slider
+                 :model v
+                 :max 1200
+                 :width "300px"
+                 :on-change #(swap! data assoc-in [:svg-params attr k] %)]]])
+            v)]]])
+      (:svg-params @data))]))
+
 (defn circle [{:keys [r fill on-mouse-down-fn]} p]
   [:circle
    {:stroke "black"
@@ -220,11 +245,13 @@
            [:foreignObject { :x (+ x 10) :y (+ y 10) :width "100" :height "30"}
             [:span ""]]])]])))
 
+
 (defn svg-canvas [data action]
   (let [svg-root (reagent/current-component)]
     (fn []
       (let [svg [:svg {:width 1200 :height 1000
-                       :style {:border "solid 1px #AEAEAE"}}
+                       :style {:border "solid 1px #AEAEAE"}
+                       :view-box (clojure.string/join " " (vals (get-in @data [:svg-params :view-box])))}
                  (doall
                   (map
                    (fn [[id {:keys [id comp params]}]]
@@ -263,32 +290,31 @@
         (if (= :delete @action) [:b "delete"] "delete")]
        [:div {:on-click #(swap! data assoc :svg nil)} "clear all"]]]]))
 
-(defonce data (reagent/atom nil))
+(defonce data (reagent/atom {:svg-params {:view-box {:min-x 0 :min-y 0 :width 1000 :height 1000}}}))
 (defonce action (reagent/atom :adjust))
 
 (defn svged []
-  (let []
-    (fn []
+  (fn []
+    [re-com/h-box
+     :gap "50px"
+     :children
+     [[re-com/h-split
+       :panel-1 [svg-tools data action]
+       :panel-2 [svg-canvas data action]
+       :initial-split 10]
       [re-com/v-box
-       :gap "50px"
+       :gap "30px"
        :children
-       [[re-com/h-split
-         :panel-1 [svg-tools data action]
-         :panel-2 [re-com/h-box
-                   :gap "30px"
-                   :children
-                   [[svg-canvas data action]
-                    [:div
-                     (doall
-                      (map
-                       (fn [[id mdata]]
-                         ^{:key id}
-                         [props-edit id data (:params mdata)])
-                       (:svg @data)))]]]
-         :initial-split 10]]])))
+       [[svg-props-edit data]
+        [:div
+         (doall
+          (map
+           (fn [[id mdata]]
+             ^{:key id}
+             [props-edit id data (:params mdata)])
+           (:svg @data)))]]]]]))
 
-(reagent/render-component [svged]
-                          (. js/document (getElementById "app")))
+(reagent/render-component [svged] (. js/document (getElementById "app")))
 
 (defn on-js-reload []
   ;; optionally touch your app-state to force rerendering depending on
