@@ -1,8 +1,7 @@
 # SVGed
 
-Me, exploring SVG space...
-In progress...
-
+* Me, exploring SVG space...
+* In progress... https://czlang.github.io/SVGed/
 
 ## Setup
 
